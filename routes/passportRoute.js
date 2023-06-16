@@ -3,7 +3,6 @@
  * @requires express
  */
 const AppError = require('../utils/appError');
-const dotenv = require('dotenv');
 const express = require('express');
 const passport = require('passport');
 const goolgePassportAuth = require('../passport/googlepassportAuth');
@@ -18,7 +17,6 @@ const { promisify } = require('util');
 const jwt = require('jsonwebtoken');
 const fetch = require('node-fetch');
 
-dotenv.config({ path: './config.env' });
 goolgePassportAuth.googleAuth(passport);
 facebookPassportAuth.facebookAuth(passport);
 /**

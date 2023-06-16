@@ -2,12 +2,10 @@
  * @module Routers/ticketRouter
  * @requires express
  */
-// const dotenv = require('dotenv');
 const express = require('express');
 // const passport = require('passport');
 
 // const userController = require('../controllers/userController');
-// dotenv.config({ path: './config.env' });
 const authController = require('../controllers/authenticationController');
 const tickController = require('../controllers/ticketController');
 /**

@@ -1,5 +1,3 @@
-const dotenv = require('dotenv');
-// const passport = require('passport');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -17,7 +15,6 @@ const AppError = require('./utils/appError');
 
 const cookieParser = require('cookie-parser');
 
-dotenv.config({ path: './config.env' });
 const app = express();
 app.enable('trust proxy');
 

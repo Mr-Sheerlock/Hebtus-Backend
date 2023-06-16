@@ -1,4 +1,3 @@
-const dotenv = require('dotenv');
 const crypto = require('crypto');
 //const passport = require('passport');
 const jwt = require('jsonwebtoken');
@@ -10,8 +9,6 @@ const AppError = require('../utils/appError');
 const sendEmail = require('../utils/email');
 const EmailConfirm = require('../models/emailConfirmModel');
 const PasswordReset = require('../models/passwordResetModel');
-
-dotenv.config({ path: '.config.env' });
 
 /**
  * The Controller responsible for handling authentication Requests

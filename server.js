@@ -1,4 +1,5 @@
 const dotenv = require('dotenv');
+dotenv.config({ path: 'config.env' });
 const mongoose = require('mongoose');
 const { faker } = require('@faker-js/faker');
 
@@ -10,7 +11,6 @@ process.on('uncaughtException', (err) => {
 const test = require('./__test__/testutils/createConfirmedUser');
 const app = require('./app');
 //Load config
-dotenv.config({ path: '.config.env' });
 const Seeder = require('./seeds/seeder');
 
 //Database connection
