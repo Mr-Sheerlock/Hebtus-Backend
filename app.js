@@ -45,6 +45,7 @@ app.use(
     },
     store: mongoStore,
     resave: false,
+    unset: 'destroy',
   })
 );
 app.use(cors());
