@@ -15,38 +15,19 @@ const PasswordReset = require('../models/passwordResetModel');
  * @module Controllers/authenticationController
  */
 
-/**
- * @description - Creates Jwt Token.
- * @param {string} id
- * @returns {Object } JWTtoken
- */
-const signToken = (id) =>
-  jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN,
-  });
-
-//creates token and attaches it to cookie.
-exports.createToken = (user, res) => {
-  const token = signToken(user._id);
-  res.token = token;
-};
-
-//creates token, attaches it to cookie and sends it as a standard responsee
-exports.createSendToken = (user, statusCode, res) => {
-  exports.createToken(user, res);
-  // res.cookie('jwt', token, cookieOptions);
-
+exports.sendUserwithSession = (user, req, res) => {
   // Remove password from output
   user.password = undefined;
-
-  res.status(statusCode).json({
+  // req.session.isAuth = true;
+  req.session.userID = user._id;
+  res.status(200).json({
     status: 'success',
-    token: res.token,
     data: {
       user,
     },
   });
 };
+
 /**
  * @description - deactivates the email of the current logged in user but has to enter his password for security purposes
  * @param {object} req  -The request object
@@ -55,55 +36,23 @@ exports.createSendToken = (user, statusCode, res) => {
  * @param {object} next -The next object for express middleware
  */
 exports.protect = catchAsync(async (req, res, next) => {
-  // 1) Getting token and check of it's there
-  console.log('entered protection');
-  let token;
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
-    token = req.headers.authorization.split(' ')[1];
+  if (req.session.userID) {
+    console.log('session is active');
+    const currentUser = await User.findById(req.session.userID);
+    if (!currentUser) {
+      return next(
+        new AppError(
+          'The user belonging to this token does no longer exist.',
+          401
+        )
+      );
+    }
+    req.user = currentUser;
+    return next();
   }
-  if (req.body.token) token = req.body.token;
-  if (req.headers.token) token = req.headers.token;
-
-  if (!token) {
-    return next(
-      new AppError('You are not logged in! Please log in to get access.', 401)
-    );
-  }
-  // 2) Verification token
-
-  //still needs to handle invalid token error tho I think
-  const decoded = await promisify(jwt.verify)(
-    token,
-    process.env.JWT_SECRET
-  ).catch((error) => {
-    next(new AppError('Could not decode token.', 401));
-    // Handle the error.
-  });
-  // })(token, process.env.JWT_SECRET);
-  // 3) Check if user still exists
-  const currentUser = await User.findById(decoded.id);
-  if (!currentUser) {
-    return next(
-      new AppError(
-        'The user belonging to this token does no longer exist.',
-        401
-      )
-    );
-  }
-
-  // 4) Check if user changed password after the token was issued
-  if (currentUser.changedPasswordAfter(decoded.iat)) {
-    return next(
-      new AppError('User recently changed password! Please log in again.', 401)
-    );
-  }
-  //we'll see if we add changed pass after or just use changed at and compare hashoof kda
-  // GRANT ACCESS TO PROTECTED ROUTE
-  req.user = currentUser;
-  next();
+  return next(
+    new AppError('You are not logged in! Please log in to get access.', 401)
+  );
 });
 
 /**
@@ -276,7 +225,6 @@ exports.login = catchAsync(async (req, res, next) => {
       status: 'fail',
       message: 'Please provide email and password!',
     });
-    next();
   }
   // 2) Check if user exists && password is correct
   const user = await User.findOne({ email }).select('+password');
@@ -286,7 +234,6 @@ exports.login = catchAsync(async (req, res, next) => {
       status: 'fail',
       message: 'Incorrect email or password!',
     });
-    next();
   }
   if (!user.accountConfirmation) {
     // return next(new AppError('User not confirmed', 401));
@@ -294,13 +241,13 @@ exports.login = catchAsync(async (req, res, next) => {
       status: 'fail',
       message: 'User not confirmed, please confirm the user through email!',
     });
-    // next();
   }
 
   // await user.save({ validateBeforeSave: 0 }); //to handle password changed at
   await user.save(); //to handle password changed at
   // 4) If everything ok, send token to client
-  exports.createSendToken(user, 200, res);
+  // exports.createSendToken(user, 200, res);
+  exports.sendUserwithSession(user, req, res);
 });
 
 /**
@@ -312,6 +259,9 @@ exports.login = catchAsync(async (req, res, next) => {
  * @returns {object} - Returns the response object
  */
 exports.logout = catchAsync(async (req, res, next) => {
+  // req.session.destory();
+  req.session = null;
+  res.clearCookie(process.env.SESSION_NAME);
   res
     .status(200)
     .json({ status: 'success', message: 'Successfully logged out' });
@@ -436,7 +386,9 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   //4) Send JWT to let the user log in
   //A Decision needs to be done here according to complications
   //and discussions with Frontend. -Joseph
-  exports.createSendToken(user, 200, res);
+  // exports.createSendToken(user, 200, res);
+  exports.sendUserwithSession(user, req, res);
+
   await passwordResetDoc.save();
 });
 

@@ -12,12 +12,41 @@ const notificationRouter = require('./routes/notificationRoute');
 const ticketRouter = require('./routes/ticketRoute');
 const globalErrorHandler = require('./controllers/errorController');
 const AppError = require('./utils/appError');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
 
 const cookieParser = require('cookie-parser');
 
 const app = express();
+
+const DBstring =
+  process.env.NODE_ENV === 'development'
+    ? process.env.DATABASE_LOCAL
+    : process.env.DATABASE_DEPLOY;
+
+const mongoStoreOptions = {
+  mongoUrl: DBstring,
+};
+
+const mongoStore = MongoStore.create(mongoStoreOptions);
+
 app.enable('trust proxy');
 
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    saveUninitialized: false,
+    name: process.env.SESSION_NAME,
+    cookie: {
+      httpOnly: true,
+      secure: false,
+      // sameSite: true,
+      maxAge: 1000 * 60 * 60, // 1 hour
+    },
+    store: mongoStore,
+    resave: false,
+  })
+);
 app.use(cors());
 app.use(helmet());
 

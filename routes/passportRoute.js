@@ -133,7 +133,7 @@ const AuthenticateGoogle = catchAsync(async (req, res, next) => {
     });
     await user.save();
   }
-  authenticationController.createSendToken(user, 201, res);
+  authenticationController.sendUserwithSession(user, 201, res);
 });
 
 /**
@@ -184,7 +184,8 @@ router.post(
       await user.save();
     }
 
-    authenticationController.createSendToken(user, 201, res);
+    // authenticationController.createSendToken(user, 201, res);
+    authenticationController.sendUserwithSession(user, 201, res);
   })
 );
 
@@ -239,7 +240,8 @@ router.post(
 
     console.log('user', user);
 
-    authenticationController.createSendToken(user, 200, res);
+    // authenticationController.createSendToken(user, 200, res);
+    authenticationController.sendUserwithSession(user, 200, res);
   })
 );
 
