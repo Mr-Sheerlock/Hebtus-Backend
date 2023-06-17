@@ -15,17 +15,52 @@ const PasswordReset = require('../models/passwordResetModel');
  * @module Controllers/authenticationController
  */
 
+/**
+ * @description - Creates Jwt Token.
+ * @param {string} id
+ * @returns {Object } JWTtoken
+ */
+const signToken = (id) =>
+  jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN,
+  });
+//creates token and attaches it to cookie.
+exports.createToken = (user, res) => {
+  const token = signToken(user._id);
+  res.token = token;
+};
+
+//creates token, attaches it to cookie and sends it as a standard responsee
+// res.cookie('jwt', token, cookieOptions);
+
 exports.sendUserwithSession = (user, req, res) => {
+  //token is used to authenticate WS connection
+  exports.createToken(user, res);
   // Remove password from output
   user.password = undefined;
   // req.session.isAuth = true;
   req.session.userID = user._id;
+
   res.status(200).json({
     status: 'success',
     data: {
+      token: res.token,
       user,
     },
   });
+};
+
+exports.getUserfromToken = async (token, req, next) => {
+  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+  const currentUser = await User.findById(decoded.id);
+  if (!currentUser) {
+    return null;
+  }
+  // 4) Check if user changed password after the token was issued
+  if (currentUser.changedPasswordAfter(decoded.iat)) {
+    return null;
+  }
+  return currentUser;
 };
 
 /**
@@ -37,7 +72,6 @@ exports.sendUserwithSession = (user, req, res) => {
  */
 exports.protect = catchAsync(async (req, res, next) => {
   if (req.session.userID) {
-    console.log('session is active');
     const currentUser = await User.findById(req.session.userID);
     if (!currentUser) {
       return next(

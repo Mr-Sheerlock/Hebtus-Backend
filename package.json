@@ -45,7 +45,9 @@
     "qrcode": "^1.5.3",
     "streamifier": "^0.1.1",
     "stripe": "^11.14.0",
-    "validator": "^13.9.0"
+    "url": "^0.11.1",
+    "validator": "^13.9.0",
+    "ws": "^8.13.0"
   },
   "devDependencies": {
     "@babel/core": "^7.21.3",

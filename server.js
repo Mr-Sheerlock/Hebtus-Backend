@@ -12,7 +12,15 @@ const test = require('./__test__/testutils/createConfirmedUser');
 const app = require('./app');
 //Load config
 const Seeder = require('./seeds/seeder');
+const authController = require('./controllers/authenticationController');
+const { WebSocketServer } = require('ws');
+const { parse } = require('url');
 
+const socketModel = require('./models/socketModel');
+
+function onSocketError(err) {
+  console.error(err);
+}
 //Database connection
 
 const DBstring =
@@ -37,9 +45,11 @@ mongoose
   });
 
 //Hosting the server
-const server = app.listen(process.env.PORT, () => {
+exports.server = app.listen(process.env.PORT, () => {
   console.log(`App is running on port ${process.env.PORT}`);
 });
+
+require('./socketserver');
 
 process.on('unhandledRejection', (err) => {
   console.log('UNHANDLED REJECTION! 💥 Shutting down...');
