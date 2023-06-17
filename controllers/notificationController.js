@@ -1,6 +1,5 @@
 const Notification = require('../models/notificationModel');
 const catchAsync = require('../utils/catchAsync');
-
 /**
  * The Controller responsible for dealing with notifications
  * @module Controllers/notificationController

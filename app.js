@@ -1,6 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const session = require('express-session');
+const MongoStore = require('connect-mongo');
+const cookieParser = require('cookie-parser');
 
 const authenticationRouter = require('./routes/authenticationRoute');
 const eventRouter = require('./routes/eventRoute');
@@ -12,10 +15,6 @@ const notificationRouter = require('./routes/notificationRoute');
 const ticketRouter = require('./routes/ticketRoute');
 const globalErrorHandler = require('./controllers/errorController');
 const AppError = require('./utils/appError');
-const session = require('express-session');
-const MongoStore = require('connect-mongo');
-
-const cookieParser = require('cookie-parser');
 
 const app = express();
 

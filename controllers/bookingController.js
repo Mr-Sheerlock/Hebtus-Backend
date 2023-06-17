@@ -14,7 +14,8 @@ const User = require('../models/userModel');
 const sendEmail = require('../utils/emailWithImage');
 const AppError = require('../utils/appError');
 const cloudinary = require('../utils/cloudinary');
-
+const SocketModel = require('../models/socketModel');
+const WebSocket = require('ws');
 /**
  * The Controller responsible for handling requests regarding Bookings
  * @module Controllers/bookingController
@@ -31,7 +32,7 @@ const cloudinary = require('../utils/cloudinary');
 */
 const createNotification = catchAsync(async ({ ...info }) => {
   const creator = await User.findOne(info.creatorID);
-  const attendee = await User.findOne({ email: info.guestEmail });
+  const { attendee } = info;
 
   //if there is no attendee with the entered email, then he isn't registered on the site
   if (!attendee) {
@@ -46,6 +47,17 @@ const createNotification = catchAsync(async ({ ...info }) => {
     eventName: info.eventName,
   });
 });
+
+const sendNotification = async (socketUID, message) => {
+  wssClients.forEach(function each(client) {
+    if (client.id == socketUID && client.readyState === WebSocket.OPEN) {
+      client.send(
+        `${message.creatorID} is inviting you to ${message.eventName}`,
+        { binary: false }
+      );
+    }
+  });
+};
 
 /** 
 @function
@@ -190,20 +202,34 @@ exports.addAttendee = catchAsync(async (req, res, next) => {
     return next(new AppError('You can not add attendee to draft event', 403));
   }
 
-  const attendee = new Booking(req.body); // Create a new attendee object
-  attendee.userID = req.user._id; // Add creatorID
-  await attendee
-    .save() // Save the attendee object
-    .then(() => {
+  const attendeeBooking = new Booking(req.body); // Create a new attendeeBooking object
+  attendeeBooking.userID = req.user._id; // Add creatorID
+  await attendeeBooking
+    .save() // Save the attendeeBooking object
+    .then(async () => {
       const { guestEmail } = req.body;
+      const attendee = await User.findOne({ email: guestEmail });
+
       const eventName = event.name;
       const creatorID = req.user._id;
-      console.log('guestEmail', guestEmail);
-      createNotification({ eventName, creatorID, guestEmail });
+      // console.log('guestEmail', guestEmail);
+
+      //send notification using web socket
+      console.log('finding user by ', attendeeBooking.userID);
+      const socket = await SocketModel.find({
+        attendeeID: attendee._id,
+      });
+      if (socket && socket.length > 0) {
+        socket.forEach((s) => {
+          sendNotification(s.socketID, { eventName, creatorID, attendee });
+        });
+      } else {
+        createNotification({ eventName, creatorID, attendee });
+      }
       return res.status(200).json({
         // Send successful response
         status: 'success',
-        data: attendee,
+        data: attendeeBooking,
       });
     })
     .catch((err) =>
